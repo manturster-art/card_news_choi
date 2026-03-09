@@ -1,0 +1,21 @@
+/* Custom Fonts */
+@font-face {
+  font-family: 'CardFont';
+  src: url('font.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Base style resets if any are needed on top of Tailwind */
+body {
+  /* Using Tailwind's default sans font, 
+     but keeping the Custom Font ready for Canvas */
+}
+
+/* Ensure the canvas maintains aspect ratio while scaling */
+#cardCanvas {
+  aspect-ratio: 1080 / 1400;
+  max-width: 100%;
+  height: auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
