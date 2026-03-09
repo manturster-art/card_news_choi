@@ -38,16 +38,16 @@
 </head>
 
 <body
-  class="bg-[#f0f4f2] font-sans text-gray-800 h-screen md:overflow-hidden flex flex-col selection:bg-[#0f5c40] selection:text-white">
+  class="bg-[#e6ece9] font-sans text-gray-800 h-screen md:overflow-hidden flex flex-col selection:bg-[#0f5c40] selection:text-white">
 
   <!-- 전체 레이아웃 래퍼 -->
   <div
-    class="flex flex-col md:flex-row flex-1 w-full h-full overflow-y-auto md:overflow-hidden md:p-6 md:gap-8 max-w-[1600px] mx-auto">
+    class="flex flex-col md:flex-row flex-1 w-full h-full overflow-y-auto md:overflow-hidden md:p-8 md:gap-8 max-w-[1600px] mx-auto min-h-0">
 
     <!-- 좌측 폼 영역 (입력 패널) - 짙은 녹색 테마 -->
     <!-- 모바일: 위쪽에 배치되며 밑 부분만 둥글게, 데스크탑: 전체 둥글게 -->
     <aside
-      class="w-full md:w-[420px] lg:w-[480px] bg-[#0f5c40] text-white rounded-b-[2.5rem] md:rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(15,92,64,0.4)] md:h-full overflow-y-auto p-8 lg:p-10 shrink-0 flex flex-col custom-scrollbar z-10 relative">
+      class="w-full md:w-[420px] lg:w-[480px] bg-[#0f5c40] text-white rounded-b-[40px] md:rounded-[40px] shadow-[0_30px_60px_-15px_rgba(15,92,64,0.4)] md:h-full overflow-y-auto p-8 lg:p-10 shrink-0 flex flex-col custom-scrollbar z-10 relative md:min-h-0">
 
       <header class="mb-10 pb-2">
         <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight flex items-center gap-3">
@@ -141,7 +141,8 @@
     </aside>
 
     <!-- 우측 미리보기 영역 (메인 패널) -->
-    <main class="flex-1 right-scrollbar md:h-full flex flex-col relative w-full overflow-hidden bg-[#f0f4f2]">
+    <main
+      class="flex-1 right-scrollbar md:h-full flex flex-col relative w-full overflow-hidden bg-[#f8faf9] md:rounded-[40px] md:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] md:min-h-0 md:border md:border-white/50">
 
       <!-- 데스크톱용 상단 액션바 (투명한 느낌, 텍스트 라벨 & 둥근 버튼) -->
       <div class="hidden md:flex sticky top-0 z-10 p-4 pt-4 pb-6 justify-between items-center">
@@ -164,7 +165,7 @@
       <div class="flex-1 overflow-y-auto w-full flex justify-center px-6 md:px-0 py-10 pb-32 md:pb-12 right-scrollbar">
         <!-- 캔버스의 모서리 자체도 둥글게(오버플로우 숨김)하여 카드느낌 극대화 -->
         <div
-          class="w-full max-w-[440px] lg:max-w-lg bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] p-0 rounded-[2.5rem] overflow-hidden flex justify-center h-fit ring-1 ring-gray-900/5">
+          class="w-full max-w-[440px] lg:max-w-lg bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] p-0 rounded-[40px] overflow-hidden flex justify-center h-fit ring-1 ring-gray-900/5">
           <canvas id="cardCanvas" width="1080" height="1400" class="w-full h-auto block"></canvas>
         </div>
       </div>
