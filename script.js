@@ -4,36 +4,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inputs
     const imageUpload = document.getElementById('imageUpload');
+    const removeImageBtn = document.getElementById('removeImageBtn');
     const dateInput = document.getElementById('dateInput');
     const scheduleInput = document.getElementById('scheduleInput');
+    const middleBannerUpload = document.getElementById('middleBannerUpload');
     const bottomBannerUpload = document.getElementById('bottomBannerUpload');
     const downloadBtn = document.getElementById('downloadBtn');
+
+    // UI Elements for Dashboard
+    const dashboardBtn = document.getElementById('dashboardBtn');
+    const mobileDashboardBtn = document.getElementById('mobileDashboardBtn');
+    const dashboardModal = document.getElementById('dashboardModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const historyListContainer = document.getElementById('historyListContainer');
+    const emptyHistoryMsg = document.getElementById('emptyHistoryMsg');
+
+    // Storage Keys
+    const AUTOSAVE_KEY = 'webcard_autosave';
+    const HISTORY_KEY = 'webcard_history';
 
     // Assets
     const assets = {
         banner: new Image(),
         bottomBanner: new Image(),
         uploadedImg: null,
+        uploadedMiddleBanner: null, // 커스텀 중단 배너용
         fontReady: false
     };
 
-    // 로컬의 banner.png 로드
+    // 로컬의 기본 배너/슬로건 이미지 로드
     assets.banner.src = 'banner.png';
-    assets.banner.onload = () => drawCanvas();
-
-    // 초기 하단 배너 (bottom_banner.png 가 있다면 로드, 없으면 파란색 테마 기본 슬로건)
     assets.bottomBanner.onerror = () => {
-        // 무한 루프 방지 및 기본 렌더링으로 fall-back
         assets.bottomBanner.onerror = null;
-        assets.bottomBanner.src = ''; // src 초기화
+        assets.bottomBanner.src = '';
         drawCanvas();
     };
     assets.bottomBanner.src = 'bottom_banner.png';
 
-    // 폰트 로딩 대기 후 화면 갱신
+    // 폰트 로딩 후 초기화/복구 진행
     document.fonts.load('10pt "CardFont"').then(() => {
         assets.fontReady = true;
-        drawCanvas();
+        loadAutoSaveData(); // 폰트 로드 완료 후 자동저장된 데이터 복구 및 렌더링
     });
 
     // 캔버스 상수 및 이미지 조작 상태
@@ -98,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setupDropZone('topDropZone', imageUpload, false);
+    setupDropZone('middleDropZone', middleBannerUpload, true);
     setupDropZone('bottomDropZone', bottomBannerUpload, true);
 
     // 2. 우측 캔버스 자체에 드래그 앤 드롭 이벤트 적용 (병행)
@@ -122,11 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const droppedFiles = e.dataTransfer.files;
 
             if (assets.uploadedImg !== null && pos.y <= MAX_IMAGE_H) {
-                // 상단 이미지가 활성화 되어있고 상단 영역에 드롭 -> 메인 이미지 교체
+                // 상단 영역 드롭
                 imageUpload.files = droppedFiles;
                 imageUpload.dispatchEvent(new Event('change'));
+            } else if (pos.y > MAX_IMAGE_H && pos.y <= MAX_IMAGE_H + SECTION2_H) {
+                // 중단 타이틀 배너 드롭
+                middleBannerUpload.files = droppedFiles;
+                middleBannerUpload.dispatchEvent(new Event('change'));
             } else {
-                // 상단 이미지가 없거나 하단 영역에 드롭 -> 하단 배너 교체
+                // 하단 배너 영역 드롭
                 bottomBannerUpload.files = droppedFiles;
                 bottomBannerUpload.dispatchEvent(new Event('change'));
             }
@@ -146,18 +162,70 @@ document.addEventListener('DOMContentLoaded', () => {
                     imgState.zoom = 1;
                     imgState.panX = 0;
                     imgState.panY = 0;
-                    drawCanvas();
+                    if (removeImageBtn) removeImageBtn.classList.remove('hidden');
+                    drawCanvasAndSave();
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         } else {
             assets.uploadedImg = null;
-            drawCanvas();
+            if (removeImageBtn) removeImageBtn.classList.add('hidden');
+            drawCanvasAndSave();
         }
     });
 
-    // 하단 배너 업로드
+    // 메인 이미지 삭제(X) 버튼 로직
+    if (removeImageBtn) {
+        removeImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // DropZone 이벤트 버블링 방지
+            imageUpload.value = ''; // file 상태 초기화
+            assets.uploadedImg = null;
+            imgState.zoom = 1;
+            imgState.panX = 0;
+            imgState.panY = 0;
+            removeImageBtn.classList.add('hidden');
+            drawCanvasAndSave();
+        });
+    }
+
+    // 중단 배너(커스텀) 업로드 / 삭제
+    const removeMiddleBannerBtn = document.getElementById('removeMiddleBannerBtn');
+
+    middleBannerUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    assets.uploadedMiddleBanner = img;
+                    if (removeMiddleBannerBtn) removeMiddleBannerBtn.classList.remove('hidden');
+                    drawCanvasAndSave();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            assets.uploadedMiddleBanner = null;
+            if (removeMiddleBannerBtn) removeMiddleBannerBtn.classList.add('hidden');
+            drawCanvasAndSave();
+        }
+    });
+
+    if (removeMiddleBannerBtn) {
+        removeMiddleBannerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            middleBannerUpload.value = '';
+            assets.uploadedMiddleBanner = null;
+            removeMiddleBannerBtn.classList.add('hidden');
+            drawCanvasAndSave();
+        });
+    }
+
+    // 하단 배너 업로드 / 삭제
+    const removeBottomBannerBtn = document.getElementById('removeBottomBannerBtn');
+
     bottomBannerUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -166,21 +234,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const img = new Image();
                 img.onload = () => {
                     assets.bottomBanner = img;
-                    drawCanvas();
+                    if (removeBottomBannerBtn) removeBottomBannerBtn.classList.remove('hidden');
+                    drawCanvasAndSave();
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         } else {
-            // 업로드 해제 시 
-            assets.bottomBanner = new Image();
-            drawCanvas();
+            assets.bottomBanner = new Image(); // 기본상태
+            assets.bottomBanner.src = 'bottom_banner.png'; // 기본 fallback용
+            if (removeBottomBannerBtn) removeBottomBannerBtn.classList.add('hidden');
+            drawCanvasAndSave();
         }
     });
 
-    // 텍스트
+    if (removeBottomBannerBtn) {
+        removeBottomBannerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            bottomBannerUpload.value = '';
+            assets.bottomBanner = new Image();
+            assets.bottomBanner.src = 'bottom_banner.png';
+            removeBottomBannerBtn.classList.add('hidden');
+            drawCanvasAndSave();
+        });
+    }
+
+    // 텍스트 인풋 변경 이벤트
     [dateInput, scheduleInput].forEach(el => {
-        el.addEventListener('input', drawCanvas);
+        el.addEventListener('input', drawCanvasAndSave);
     });
 
     // ----- 캔버스 마우스/터치 이벤트 (Pan & Zoom) -----
@@ -236,10 +317,58 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('mouseup', handleDragEnd);
     canvas.addEventListener('mouseleave', handleDragEnd);
 
-    // 터치 지원
-    canvas.addEventListener('touchstart', handleDragStart, { passive: false });
-    canvas.addEventListener('touchmove', handleDragMove, { passive: false });
-    canvas.addEventListener('touchend', handleDragEnd);
+    // 모바일 터치 장치 지원 (Pinch-To-Zoom & Drag)
+    let initialPinchDistance = null;
+    let initialZoom = 1;
+
+    function getPinchDistance(touches) {
+        if (touches.length < 2) return 0;
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    canvas.addEventListener('touchstart', (e) => {
+        if (!assets.uploadedImg) return;
+        const pos = getMousePos(e.touches[0]);
+
+        // 상단 사진 구역에서만 동작
+        if (pos.y > MAX_IMAGE_H) return;
+
+        if (e.touches.length === 2) {
+            // 두 손가락일 땐 줌
+            e.preventDefault();
+            initialPinchDistance = getPinchDistance(e.touches);
+            initialZoom = imgState.zoom;
+            imgState.isDragging = false; // 드래그 중단
+        } else if (e.touches.length === 1) {
+            handleDragStart(e);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        if (!assets.uploadedImg) return;
+
+        if (e.touches.length === 2 && initialPinchDistance) {
+            e.preventDefault();
+            const currentDistance = getPinchDistance(e.touches);
+            const zoomDelta = currentDistance / initialPinchDistance;
+
+            let newZoom = initialZoom * zoomDelta;
+            newZoom = Math.max(0.5, Math.min(newZoom, 3));
+            imgState.zoom = newZoom;
+            drawCanvas();
+        } else if (e.touches.length === 1) {
+            handleDragMove(e);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            initialPinchDistance = null;
+        }
+        handleDragEnd();
+    });
 
     // 마우스 휠 줌 기능
     canvas.addEventListener('wheel', (e) => {
@@ -264,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Zoom in on center
             imgState.zoom = newZoom;
-            drawCanvas();
+            drawCanvasAndSave();
         }
     }, { passive: false });
 
@@ -338,7 +467,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. 중단 배너 타이틀
-        if (assets.banner.complete && assets.banner.naturalHeight !== 0 && assets.banner.src) {
+        if (assets.uploadedMiddleBanner && assets.uploadedMiddleBanner.complete) {
+            // 사용자의 커스텀 변경 중단 배너가 있을 경우 우선 렌더링
+            ctx.drawImage(assets.uploadedMiddleBanner, 0, bannerStartY, CANVAS_W, SECTION2_H);
+        } else if (assets.banner.complete && assets.banner.naturalHeight !== 0 && assets.banner.src) {
+            // 기본 로고 배너
             ctx.drawImage(assets.banner, 0, bannerStartY, CANVAS_W, SECTION2_H);
         } else {
             // 배너 이미지 대체용 컬러 사각형
@@ -396,29 +529,185 @@ document.addEventListener('DOMContentLoaded', () => {
             // 텍스트를 파란색 영역의 정중앙에 배치
             ctx.fillText(sloganText, CANVAS_W / 2, drawnBottomBannerBaseY + (bottomBannerHeight / 2));
         }
-    }
+        // ===== 자동 저장(Auto-save) 및 복구 =====
 
-    // 다운로드 처리 공통 로직
-    const downloadAction = (e) => {
-        e.preventDefault();
-        try {
-            const imgDataUrl = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `webcard_${new Date().getTime()}.png`;
-            link.href = imgDataUrl;
-            document.body.appendChild(link); // 브라우저 호환성을 위한 요소 추가
-            link.click();
-            document.body.removeChild(link); // 클릭 후 제거
-        } catch (err) {
-            console.error(err);
-            alert("다운로드 실패: 로컬 파일(file://) 환경에서는 브라우저 보안 정책으로 이미지를 추출할 수 없습니다.\n\n해결 방법: VS Code의 'Live Server' 플러그인 등 로컬 웹 서버 환경에서 html을 실행해 주세요.");
+        // 그리기 발생 및 저장 (입력 이벤트 발생 등)
+        function drawCanvasAndSave() {
+            drawCanvas();
+            saveAutoSaveData();
         }
-    };
 
-    downloadBtn.addEventListener('click', downloadAction);
+        function saveAutoSaveData() {
+            // 이미지는 dataURL로 변환하여 문자열로 저장
+            const getBase64 = (img) => {
+                if (!img || !img.src) return null;
+                if (img.src.startsWith('data:')) return img.src; // 이미 Base64인 커스텀파일
+                // 로컬 파일 등은 용량/보안 이슈로 저장 안 함 (수동 복구)
+                return null;
+            };
 
-    const mobileDownloadBtn = document.getElementById('mobileDownloadBtn');
-    if (mobileDownloadBtn) {
-        mobileDownloadBtn.addEventListener('click', downloadAction);
-    }
-});
+            const stateObj = {
+                dateInput: dateInput.value,
+                scheduleInput: scheduleInput.value,
+                imgState: imgState,
+                uploadedImgBase64: getBase64(assets.uploadedImg),
+                uploadedMiddleBannerBase64: getBase64(assets.uploadedMiddleBanner),
+                bottomBannerBase64: getBase64(assets.bottomBanner)
+            };
+            localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(stateObj));
+        }
+
+        function loadAutoSaveData() {
+            const savedData = localStorage.getItem(AUTOSAVE_KEY);
+            if (savedData) {
+                try {
+                    const stateObj = JSON.parse(savedData);
+
+                    dateInput.value = stateObj.dateInput || '';
+                    scheduleInput.value = stateObj.scheduleInput || '';
+                    if (stateObj.imgState) {
+                        imgState = stateObj.imgState;
+                    }
+
+                    // 이미지 복구 함수 (비동기로 그려줌)
+                    const restoreImg = (base64Str, assetKey, btnId) => {
+                        if (base64Str) {
+                            const img = new Image();
+                            img.onload = () => {
+                                assets[assetKey] = img;
+                                const btn = document.getElementById(btnId);
+                                if (btn) btn.classList.remove('hidden');
+                                drawCanvas();
+                            };
+                            img.src = base64Str;
+                        }
+                    };
+
+                    restoreImg(stateObj.uploadedImgBase64, 'uploadedImg', 'removeImageBtn');
+                    restoreImg(stateObj.uploadedMiddleBannerBase64, 'uploadedMiddleBanner', 'removeMiddleBannerBtn');
+
+                    if (stateObj.bottomBannerBase64 && assets.bottomBanner.src !== stateObj.bottomBannerBase64) {
+                        restoreImg(stateObj.bottomBannerBase64, 'bottomBanner', 'removeBottomBannerBtn');
+                    } else {
+                        drawCanvas();
+                    }
+
+                } catch (e) { console.error("Auto-save load failed:", e); }
+            } else {
+                drawCanvas(); // 저장된 데이터가 없으면 그냥 초기 그리기
+            }
+        }
+
+        // ===== 보관함(대시보드) 히스토리 기능 =====
+
+        function saveToHistoryDashboard() {
+            // 현재 상태를 히스토리용 오브젝트로 만들기
+            const historyData = localStorage.getItem(HISTORY_KEY);
+            let historyArray = historyData ? JSON.parse(historyData) : [];
+
+            // 너무 크지 않도록 썸네일은 0.3 비율 등 해상도를 줄여 저장 가능하지만, 단순 구현을 위해 그대로 활용
+            const stateObj = {
+                id: new Date().getTime(),
+                date: new Date().toLocaleDateString('ko-KR') + ' ' + new Date().toLocaleTimeString('ko-KR'),
+                previewDataUrl: canvas.toDataURL('image/jpeg', 0.5), // 용량 절약을 위해 썸네일 JPEG 변환 
+                autosaveState: localStorage.getItem(AUTOSAVE_KEY) // 복구 가능한 순수 상태 통째 저장
+            };
+
+            // 최신 내용이 0번 인덱스에 오도록 추가, 최대 15개 유지
+            historyArray.unshift(stateObj);
+            if (historyArray.length > 15) {
+                historyArray.pop();
+            }
+
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyArray));
+        }
+
+        function renderHistoryList() {
+            historyListContainer.innerHTML = '';
+            const historyData = localStorage.getItem(HISTORY_KEY);
+            let historyArray = historyData ? JSON.parse(historyData) : [];
+
+            if (historyArray.length === 0) {
+                emptyHistoryMsg.classList.remove('hidden');
+            } else {
+                emptyHistoryMsg.classList.add('hidden');
+
+                historyArray.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white border text-center border-gray-100 rounded-[1.5rem] shadow-sm hover:shadow-lg transition-shadow overflow-hidden flex flex-col";
+
+                    card.innerHTML = `
+                    <div class="h-48 bg-gray-100 overflow-hidden flex justify-center items-center w-full">
+                        <img src="${item.previewDataUrl}" class="h-full object-contain" alt="thumbnail">
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between items-center text-center">
+                        <p class="text-xs text-gray-400 mb-3">${item.date}</p>
+                        <button class="w-full bg-[#f0f4f2] text-[#0f5c40] hover:bg-[#0f5c40] hover:text-white font-bold py-2.5 px-4 rounded-xl transition-colors text-sm" onclick="restoreHistoryItem(${index})">
+                            이 작업 불러오기
+                        </button>
+                    </div>
+                `;
+                    historyListContainer.appendChild(card);
+                });
+            }
+        }
+
+        // 전역에서 접근 가능하도록 window 객체에 바인딩
+        window.restoreHistoryItem = (index) => {
+            const historyData = localStorage.getItem(HISTORY_KEY);
+            let historyArray = historyData ? JSON.parse(historyData) : [];
+            if (historyArray[index] && historyArray[index].autosaveState) {
+                // localStorage의 오토세이브 키를 덮어씌움
+                localStorage.setItem(AUTOSAVE_KEY, historyArray[index].autosaveState);
+                // 덮어씌운 데이터를 기반으로 리로드 진행
+                loadAutoSaveData();
+                // 화면 닫기
+                dashboardModal.classList.add('hidden');
+            }
+        };
+
+        // 모달 토글 이벤트
+        [dashboardBtn, mobileDashboardBtn].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    renderHistoryList();
+                    dashboardModal.classList.remove('hidden');
+                });
+            }
+        });
+
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', () => {
+                dashboardModal.classList.add('hidden');
+            });
+        }
+
+        // 다운로드 처리 및 히스토리 저장
+        const downloadAction = (e) => {
+            e.preventDefault();
+            try {
+                const imgDataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `webcard_${new Date().getTime()}.png`;
+                link.href = imgDataUrl;
+                document.body.appendChild(link); // 브라우저 호환성을 위한 요소 추가
+                link.click();
+                document.body.removeChild(link); // 클릭 후 제거
+
+                // 다운로드가 성공적으로 진행되었으면 히스토리(대시보드)에 등록
+                saveAutoSaveData();
+                saveToHistoryDashboard();
+
+            } catch (err) {
+                console.error(err);
+                alert("다운로드 실패: 로컬 파일(file://) 환경에서는 브라우저 보안 정책으로 이미지를 추출할 수 없습니다.\n\n해결 방법: VS Code의 'Live Server' 플러그인 등 로컬 웹 서버 환경에서 html을 실행해 주세요.");
+            }
+        };
+
+        downloadBtn.addEventListener('click', downloadAction);
+
+        const mobileDownloadBtn = document.getElementById('mobileDownloadBtn');
+        if (mobileDownloadBtn) {
+            mobileDownloadBtn.addEventListener('click', downloadAction);
+        }
+    });
