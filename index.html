@@ -165,12 +165,13 @@
     <main
       class="flex-1 right-scrollbar md:h-full flex flex-col relative w-full overflow-hidden bg-[#f8faf9] md:rounded-[40px] md:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] md:min-h-0 md:border md:border-white/50">
 
-      <!-- 데스크톱용 상단 액션바 (투명한 느낌, 대시보드 및 다운로드 버튼) -->
-      <div class="hidden md:flex sticky top-0 z-10 p-4 pt-4 pb-6 justify-between items-center">
+      <!-- 상단 액션바 및 타이틀 (모바일에서도 타이틀 노출) -->
+      <div
+        class="flex sticky top-0 z-10 p-4 pt-6 md:pt-4 pb-4 md:pb-6 justify-center md:justify-between items-center bg-[#f8faf9]/95 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-b border-gray-200/60 md:border-none shadow-sm md:shadow-none w-full">
         <div class="px-4">
-          <h2 class="text-3xl font-extrabold text-gray-800 tracking-tight">요약 미리보기</h2>
+          <h2 class="text-xl md:text-3xl font-extrabold text-gray-800 tracking-tight">요약 미리보기</h2>
         </div>
-        <div class="px-4 flex gap-4">
+        <div class="hidden md:flex px-4 gap-4">
           <button id="dashboardBtn"
             class="bg-white text-gray-600 hover:text-[#0f5c40] hover:bg-gray-50 border border-gray-200 font-bold py-3.5 px-6 rounded-full shadow-lg shadow-gray-200/50 transition-all duration-300 active:scale-[0.97] text-sm flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
