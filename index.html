@@ -163,7 +163,7 @@
 
     <!-- 우측 미리보기 영역 (메인 패널) -->
     <main
-      class="flex-1 right-scrollbar md:h-full flex flex-col relative w-full overflow-hidden bg-[#f8faf9] md:rounded-[40px] md:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] md:min-h-0 md:border md:border-white/50">
+      class="flex-1 right-scrollbar md:h-full flex flex-col relative w-full md:overflow-hidden bg-[#f8faf9] md:rounded-[40px] md:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] md:min-h-0 md:border md:border-white/50">
 
       <!-- 상단 액션바 및 타이틀 (모바일에서도 타이틀 노출) -->
       <div
@@ -191,7 +191,8 @@
       </div>
 
       <!-- 캔버스 컨테이너 -->
-      <div class="flex-1 overflow-y-auto w-full flex justify-center px-6 md:px-0 py-10 pb-32 md:pb-12 right-scrollbar">
+      <div
+        class="flex-1 md:overflow-y-auto w-full flex justify-center px-6 md:px-0 py-10 pb-32 md:pb-12 right-scrollbar">
         <!-- 캔버스의 모서리 자체도 둥글게(오버플로우 숨김)하여 카드느낌 극대화 -->
         <div
           class="w-full max-w-[440px] lg:max-w-lg bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] p-0 rounded-[40px] overflow-hidden flex justify-center h-fit ring-1 ring-gray-900/5">
